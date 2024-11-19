@@ -27,24 +27,27 @@ router.get('/links', async (req, res) => {
         const links = [];
 
         for (const url of urls) {
-            // Подсчитываем количество уникальных кликов (по уникальным IP-адресам)
+            // Подсчитываем все клики (не уникальные)
+            const totalClicks = url.clicks; // Общее количество кликов из поля `clicks` модели `Url`
+
+            // Подсчитываем уникальные клики (по уникальным IP)
             const uniqueClicks = await Click.count({
-                where: {
-                    urlId: url.id,
-                },
+                distinct: true, // Подсчитываем только уникальные IP-адреса
+                where: { urlId: url.id },
+                col: 'ipAddress', // Для уникальности по IP
             });
 
             // Получаем последний IP-адрес, с которого был клик
             const lastClick = await Click.findOne({
                 where: { urlId: url.id },
-                order: [['createdAt', 'DESC']], // Последний клик
+                order: [['createdAt', 'DESC']], // Последний клик по времени
                 attributes: ['ipAddress'],
             });
 
             links.push({
                 shortUrl: `${process.env.BASE_URL}/${url.shortId}`,
                 originalUrl: url.originalUrl,
-                clicks: url.clicks, // Общее количество кликов
+                clicks: totalClicks, // Общее количество кликов
                 uniqueClicks, // Уникальные клики
                 lastIp: lastClick ? lastClick.ipAddress : null, // Последний IP, если есть
             });
@@ -57,30 +60,17 @@ router.get('/links', async (req, res) => {
 });
 
 router.get('/:shortId', async (req, res) => {
-    const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress; // Получаем IP-адрес
-
     try {
         const url = await Url.findOne({ where: { shortId: req.params.shortId } });
         if (url) {
-            // Проверяем, был ли уже клик с этого IP-адреса
-            const existingClick = await Click.findOne({
-                where: {
-                    urlId: url.id,
-                    ipAddress,
-                },
+            url.clicks += 1; // Обновляем общее количество кликов
+            await url.save();
+
+            // Сохраняем информацию о клике с IP-адресом
+            await Click.create({
+                urlId: url.id,
+                ipAddress: req.ip, // Сохраняем IP-адрес пользователя
             });
-
-            if (!existingClick) {
-                // Если клика с этого IP ещё не было, сохраняем его
-                await Click.create({
-                    urlId: url.id,
-                    ipAddress,
-                });
-
-                // Увеличиваем количество уникальных кликов
-                url.clicks += 1;
-                await url.save();
-            }
 
             return res.redirect(url.originalUrl);
         }

@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('./index');
+const Url = require('./Url'); // Импортируем модель Url для связи
 
 const Click = sequelize.define('Click', {
     ipAddress: {
@@ -9,11 +10,13 @@ const Click = sequelize.define('Click', {
     urlId: {
         type: DataTypes.INTEGER,
         references: {
-            model: 'Urls', // связь с моделью Url
+            model: Url,
             key: 'id',
         },
         allowNull: false,
     },
+}, {
+    timestamps: true, // добавляем метки времени
 });
 
 module.exports = Click;
