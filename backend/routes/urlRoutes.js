@@ -49,7 +49,7 @@ router.get('/links', async (req, res) => {
                 originalUrl: url.originalUrl,
                 clicks: totalClicks, // Общее количество кликов
                 uniqueClicks, // Уникальные клики
-                lastIp: lastClick ? lastClick.ipAddress : null, // Последний IP, если есть
+                lastIp: lastClick ? lastClick.ipAddress : 'Нет переходов', // Последний IP, если есть
             });
         }
 
