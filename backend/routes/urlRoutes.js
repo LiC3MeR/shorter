@@ -57,7 +57,7 @@ router.get('/links', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Error retrieving links' });
     }
-});
+});``
 
 router.get('/:shortId', async (req, res) => {
     try {
@@ -66,10 +66,16 @@ router.get('/:shortId', async (req, res) => {
             url.clicks += 1; // Обновляем общее количество кликов
             await url.save();
 
-            // Сохраняем информацию о клике с IP-адресом
+            // Получаем реальный IP-адрес клиента
+            const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+            // Если прокси прислал несколько адресов, берем первый
+            const realIp = ipAddress.split(',')[0];
+
+            // Сохраняем информацию о клике с реальным IP-адресом
             await Click.create({
                 urlId: url.id,
-                ipAddress: req.ip, // Сохраняем IP-адрес пользователя
+                ipAddress: realIp.trim(), // Убираем лишние пробелы
             });
 
             return res.redirect(url.originalUrl);
