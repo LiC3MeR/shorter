@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('./index');
+const Click = require('./Click'); // Подключаем модель Click
 
 const Url = sequelize.define('Url', {
     originalUrl: {
@@ -16,5 +17,7 @@ const Url = sequelize.define('Url', {
         defaultValue: 0,
     },
 });
+
+Url.hasMany(Click, { foreignKey: 'urlId' });
 
 module.exports = Url;
